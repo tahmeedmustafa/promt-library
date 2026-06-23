@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tahmeed Mustafa — Claude Prompt Library</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:        #060d1a;
+    --blue:       #3b82f6;
+    --blue-bright:#60a5fa;
+    --blue-dim:   rgba(59,130,246,0.13);
+    --blue-glow:  rgba(59,130,246,0.25);
+    --card-bg:    #0e1e38;
+    --card-border:#1a3260;
+    --header-bg:  #04101f;
+    --text-main:  #e8f0ff;
+    --text-muted: #6d8cb8;
+    --text-label: #9ab3d8;
+    --mono-bg:    #070f20;
+    --radius:     18px;
+    --radius-sm:  10px;
+    --shadow-card: 0 6px 28px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.3);
+    --shadow-hover:0 12px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(59,130,246,0.2);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--ink);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% -5%, rgba(59,130,246,0.09) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 40% at 90% 90%, rgba(30,70,160,0.18) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .page-body {
+    padding: 0 20px 90px;
+    max-width: 880px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header-wrap {
+    position: relative;
+    z-index: 1;
+    background: var(--header-bg);
+    border-bottom: 1px solid rgba(59,130,246,0.15);
+    margin-bottom: 48px;
+  }
+
+  .header-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 65% 90% at 20% 50%, rgba(59,130,246,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .site-header {
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 44px 20px 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .owner-name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue-bright);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .owner-name::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 2px;
+    background: var(--blue-bright);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .site-title {
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    font-weight: 750;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+    color: var(--text-main);
+    margin-bottom: 16px;
+  }
+
+  .site-title span { color: var(--blue-bright); }
+
+  .site-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 500px;
+    line-height: 1.65;
+  }
+
+  .header-meta {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .prompt-count {
+    font-size: 12px;
+    color: var(--blue-bright);
+    background: var(--blue-dim);
+    border: 1px solid rgba(59,130,246,0.25);
+    padding: 4px 14px;
+    border-radius: 100px;
+    font-weight: 600;
+  }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--blue);
+    color: var(--blue-bright);
+    background: var(--blue-dim);
+  }
+
+  .filter-btn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* ── Grid ── */
+  .prompt-grid { display: grid; gap: 22px; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 40px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--card-border);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue), rgba(96,165,250,0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .card:hover {
+    border-color: rgba(59,130,246,0.45);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .card-meta { flex: 1; min-width: 0; }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue-bright);
+    background: var(--blue-dim);
+    border: 1px solid rgba(59,130,246,0.22);
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-bottom: 8px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--text-main);
+    line-height: 1.3;
+  }
+
+  /* Prompt block */
+  .prompt-block {
+    background: var(--mono-bg);
+    border: 1px solid rgba(59,130,246,0.1);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+
+  .prompt-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .prompt-label::before {
+    content: "›";
+    color: var(--blue-bright);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .prompt-text {
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+    font-size: 0.84rem;
+    line-height: 1.75;
+    color: #b8d0f5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.18s ease;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+
+  .copy-btn:hover {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+    box-shadow: 0 0 14px var(--blue-glow);
+  }
+
+  .copy-btn.copied {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: white;
+  }
+
+  /* Why block */
+  .why-block {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .why-icon {
+    width: 20px;
+    height: 20px;
+    background: var(--blue-dim);
+    border: 1px solid rgba(59,130,246,0.22);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--blue-bright);
+  }
+
+  .why-text {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .why-text strong { color: var(--text-label); font-weight: 600; }
+
+  /* ── Footer ── */
+  .site-footer {
+    margin-top: 72px;
+    padding-top: 28px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .site-footer p { font-size: 13px; color: var(--text-muted); }
+  .site-footer .accent { color: var(--blue-bright); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card-bg);
+    border: 1px solid var(--blue);
+    color: var(--blue-bright);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 100px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 16px var(--blue-glow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+    z-index: 999;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .card { padding: 20px 16px; }
+    .site-header { padding: 36px 16px 36px; }
+    .prompt-text { font-size: 0.79rem; }
+    .page-body { padding: 0 14px 60px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Dark header band -->
+<div class="header-wrap">
+  <header class="site-header">
+    <div class="owner-name">Tahmeed Mustafa</div>
+    <h1 class="site-title">My Claude<br><span>Prompt Library</span></h1>
+    <p class="site-subtitle">Prompts I return to again and again — refined through use, annotated with what actually makes them work.</p>
+    <div class="header-meta">
+      <span class="prompt-count" id="prompt-count">15 prompts</span>
+    </div>
+  </header>
+</div>
+
+<div class="page-body">
+
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" data-tag="all">All</button>
+    <button class="filter-btn" data-tag="Writing">Writing</button>
+    <button class="filter-btn" data-tag="Thinking">Thinking</button>
+    <button class="filter-btn" data-tag="Coding">Coding</button>
+    <button class="filter-btn" data-tag="Research">Research</button>
+    <button class="filter-btn" data-tag="Productivity">Productivity</button>
+  </div>
+
+  <!-- Cards -->
+  <div class="prompt-grid" id="prompt-grid"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>Built with <span class="accent">♥</span> by <span class="accent">Tahmeed Mustafa</span></p>
+    <p>Last updated <span class="accent">2025</span></p>
+  </footer>
+
+</div><!-- /page-body -->
+
+<!-- Toast -->
+<div class="toast" id="toast">Copied to clipboard ✓</div>
+
+<script>
+const prompts = [
+  {
+    tag: "Writing",
+    title: "The Steel-Man Editor",
+    prompt: "Before you give me feedback on this piece, first write the strongest possible version of my argument — the one I was trying to make but didn't quite land. Then tell me where my draft falls short of that ideal.",
+    why: "<strong>Why it works:</strong> Forces the model to understand your intent before critiquing, so feedback is about execution gaps rather than disagreements with your thesis."
+  },
+  {
+    tag: "Thinking",
+    title: "Pre-Mortem Pressure Test",
+    prompt: "Assume it's 12 months from now and [project/decision] has failed badly. Walk me through the 3 most plausible failure paths — be specific about the mechanism, not just the outcome.",
+    why: "<strong>Why it works:</strong> Anchoring in a hypothetical failure removes optimism bias and forces specific causal reasoning rather than generic risk lists."
+  },
+  {
+    tag: "Writing",
+    title: "The One-Sentence Distillation",
+    prompt: "Read everything I've written below. Now write a single sentence — under 20 words — that captures the core idea. No hedging, no qualifiers. Then explain in one paragraph why you chose that framing.",
+    why: "<strong>Why it works:</strong> The word limit forces compression, and asking for justification reveals whether the distillation is accurate or reductive."
+  },
+  {
+    tag: "Coding",
+    title: "Rubber Duck with Stakes",
+    prompt: "I'm going to explain my code approach. Don't write any code yet. Ask me clarifying questions until you can identify the single biggest assumption I'm making that could break this. Then tell me what it is.",
+    why: "<strong>Why it works:</strong> Delaying code generation forces a problem-understanding phase. The 'single biggest assumption' framing prevents a scattered list of concerns."
+  },
+  {
+    tag: "Research",
+    title: "The Confident Uncertainty Report",
+    prompt: "On [topic], tell me: (1) what is well-established and why, (2) what is actively debated among experts and what the camps are, (3) what important questions remain genuinely open. Cite the type of evidence, not just claims.",
+    why: "<strong>Why it works:</strong> Separating consensus, debate, and open questions maps the actual epistemic landscape instead of flattening everything into authoritative-sounding assertions."
+  },
+  {
+    tag: "Productivity",
+    title: "The Weekly Debrief",
+    prompt: "Here's what I worked on this week: [list]. Ask me 5 questions to help me identify: what I should stop doing, what I should do more of, and one thing I'm avoiding that I probably shouldn't be.",
+    why: "<strong>Why it works:</strong> The question format externalizes reflection rather than prompting a self-assessment you'd write yourself. The 'avoiding' question surfaces real blockers."
+  },
+  {
+    tag: "Writing",
+    title: "Voice Transplant",
+    prompt: "Here's a paragraph I wrote: [paragraph]. Here's a piece written by someone whose style I admire: [example]. Rewrite my paragraph to carry the rhythm, sentence structure, and register of the second writer — but keep every one of my ideas intact.",
+    why: "<strong>Why it works:</strong> Separating style from content makes it easy to spot what's structural about a voice versus what's just word choice."
+  },
+  {
+    tag: "Thinking",
+    title: "The Crux Finder",
+    prompt: "I disagree with [position]. Help me find the single crux: the one factual or value claim that, if I changed my mind on it, would most likely change my overall conclusion. Then tell me what evidence would actually shift that crux.",
+    why: "<strong>Why it works:</strong> Most disagreements are multi-layered. Isolating the crux focuses the disagreement and makes it potentially resolvable instead of just debatable."
+  },
+  {
+    tag: "Coding",
+    title: "The Code Review That Hurts",
+    prompt: "Review this code as if you're a senior engineer who cares deeply about maintainability. Don't be diplomatic. Tell me: what would make you sigh when you had to touch this in six months, and why.",
+    why: "<strong>Why it works:</strong> 'Don't be diplomatic' and the future-maintainer frame override the model's tendency toward balanced, softened feedback."
+  },
+  {
+    tag: "Research",
+    title: "Steelman the Source",
+    prompt: "Here's an argument I find unconvincing: [argument]. Give me the version of this argument that a thoughtful, well-informed person who genuinely holds this view would make — not a strawman, but the real case.",
+    why: "<strong>Why it works:</strong> Asking for the 'thoughtful believer' version prevents the model from building a weak version it can easily knock down."
+  },
+  {
+    tag: "Productivity",
+    title: "The Decision Already Made",
+    prompt: "I'm deciding between [A] and [B]. I'll tell you my gut is leaning toward [A]. Rather than list pros and cons, tell me what the strongest case against [A] is — assume I've already heard the case for it.",
+    why: "<strong>Why it works:</strong> Eliminating the pro/con list and the case for your preferred option forces the model to surface what you're most likely to rationalize away."
+  },
+  {
+    tag: "Thinking",
+    title: "The Perspective Carousel",
+    prompt: "Here's my plan: [plan]. Now respond three times, each time as a different type of person who would interact with this: (1) someone who benefits most, (2) someone who is inconvenienced by it, (3) a neutral observer with no stake. One short paragraph each.",
+    why: "<strong>Why it works:</strong> Assigning concrete stakeholder roles prevents generic 'some might say' hedging and produces usefully specific perspective-taking."
+  },
+  {
+    tag: "Coding",
+    title: "The Complexity Budget",
+    prompt: "Here's a feature I want to build: [feature]. Before writing any code, give me three implementation options ranked by complexity — simple, moderate, and over-engineered. Explain the real cost of each, not just the tradeoffs on paper.",
+    why: "<strong>Why it works:</strong> Naming the over-engineered option explicitly makes it safe to reject, and 'real cost' pushes past abstract tradeoff language into actual consequences."
+  },
+  {
+    tag: "Writing",
+    title: "The Ruthless Cut",
+    prompt: "Here's something I've written: [text]. Your only job is to identify the 20% I should delete. Don't rewrite anything — just tell me exactly which sentences or paragraphs are weakening the whole, and why each one is expendable.",
+    why: "<strong>Why it works:</strong> Restricting the task to cutting (not improving) forces identification of the weakest material rather than a general polish pass."
+  },
+  {
+    tag: "Productivity",
+    title: "The Context Handoff",
+    prompt: "I need to hand this project off to someone who knows nothing about it. Write a 200-word briefing that covers: what we're trying to achieve, what has been decided and why, and what the next person must not get wrong.",
+    why: "<strong>Why it works:</strong> The 'must not get wrong' frame surfaces the highest-risk assumptions and implicit knowledge that would otherwise stay in your head."
+  }
+];
+
+const grid = document.getElementById('prompt-grid');
+const filterBar = document.getElementById('filter-bar');
+const toast = document.getElementById('toast');
+const countEl = document.getElementById('prompt-count');
+
+let activeTag = 'all';
+let toastTimer;
+
+function renderCards(tag) {
+  const filtered = tag === 'all' ? prompts : prompts.filter(p => p.tag === tag);
+  countEl.textContent = `${filtered.length} prompt${filtered.length !== 1 ? 's' : ''}`;
+
+  const grouped = {};
+  filtered.forEach(p => {
+    if (!grouped[p.tag]) grouped[p.tag] = [];
+    grouped[p.tag].push(p);
+  });
+
+  grid.innerHTML = '';
+  const groups = tag === 'all' ? Object.keys(grouped) : [tag];
+
+  groups.forEach(groupTag => {
+    if (tag === 'all') {
+      const label = document.createElement('div');
+      label.className = 'section-label';
+      label.textContent = groupTag;
+      grid.appendChild(label);
+    }
+
+    grouped[groupTag].forEach(prompt => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-meta">
+            <div class="card-tag">${prompt.tag}</div>
+            <div class="card-title">${prompt.title}</div>
+          </div>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-label">Prompt</div>
+          <div class="prompt-text">${escapeHtml(prompt.prompt)}</div>
+          <button class="copy-btn" title="Copy prompt" aria-label="Copy prompt to clipboard">⎘</button>
+        </div>
+        <div class="why-block">
+          <div class="why-icon">✦</div>
+          <div class="why-text">${prompt.why}</div>
+        </div>
+      `;
+      card.querySelector('.copy-btn').addEventListener('click', function() {
+        copyPrompt(prompt.prompt, this);
+      });
+      grid.appendChild(card);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyPrompt(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘'; btn.classList.remove('copied'); }, 1800);
+    clearTimeout(toastTimer);
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+filterBar.addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeTag = btn.dataset.tag;
+  renderCards(activeTag);
+});
+
+renderCards('all');
+</script>
+</body>
+</html>
